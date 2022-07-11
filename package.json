@@ -4,7 +4,7 @@
     "@discordjs/rest": "^0.5.0",
     "discord-api-types": "^0.36.1",
     "discord.js": "^13.8.1",
-    "luxon": "^2.4.0",
+    "luxon": "^3.0.1",
     "mariadb": "^3.0.0",
     "reflect-metadata": "^0.1.13",
     "sequelize": "^6.21.2"
