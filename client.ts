@@ -1,4 +1,4 @@
-import {Client, Collection, Intents} from "discord.js";
+import {ActivityType, Client, Collection, GatewayIntentBits, Partials} from "discord.js";
 import {Activity, init} from "./orm"
 import {DateTime} from "luxon";
 
@@ -6,8 +6,8 @@ const {discord} = require("./config.json");
 const fs = require('fs');
 
 const client = new Client({
-    intents: [Intents.FLAGS.GUILD_PRESENCES, Intents.FLAGS.GUILD_MEMBERS, Intents.FLAGS.GUILDS],
-    partials: ["USER", "GUILD_MEMBER"]
+    intents: [GatewayIntentBits.GuildPresences, GatewayIntentBits.GuildMembers, GatewayIntentBits.Guilds],
+    partials: [Partials.User, Partials.GuildMember]
 });
 
 client["commands"] = new Collection();
@@ -22,7 +22,7 @@ for (const file of commandFiles) {
 
 client.on('interactionCreate', async interaction => {
     try {
-        if (!interaction.isCommand()) return;
+        if (!interaction.isChatInputCommand()) return;
 
         // console.debug("%s%s ran %s", interaction.user.username, interaction.user.discriminator, interaction.commandName);
 
@@ -57,17 +57,38 @@ client.on("presenceUpdate", (oldPresence, newPresence) => {
     }
     if (newPresence.activities && newPresence.activities.length > 0) {
         for (const activity of newPresence.activities) {
-            if (activity.type !== "CUSTOM") {
+            if (activity.type !== ActivityType.Custom) {
                 const cacheId = newPresence.userId + activity.name + activity.details?.trim();
                 const currentTimeSecs = DateTime.now().setZone("America/New_York").toSeconds();
                 const diff = currentTimeSecs - (activityCache[cacheId] || 0)
                 if (diff > 300) { // 60 * 5 = 300
                     activityCache[cacheId] = currentTimeSecs;
+                    let activityTypeName: string;
+                    switch (activity.type) {
+                        case ActivityType.Playing:
+                            activityTypeName = "PLAYING";
+                            break;
+                        case ActivityType.Listening:
+                            activityTypeName = "LISTENING";
+                            break;
+                        case ActivityType.Watching:
+                            activityTypeName = "WATCHING";
+                            break;
+                        case ActivityType.Competing:
+                            activityTypeName = "COMPETING";
+                            break;
+                        case ActivityType.Streaming:
+                            activityTypeName = "STREAMING";
+                            break;
+                        default:
+                            activityTypeName = "PLAYING";
+                            break;
+                    }
                     Activity.create({
                         userId: newPresence.userId,
                         name: activity.name,
                         data: activity.details,
-                        type: activity.type
+                        type: activityTypeName
                     }).catch((reason => console.error(reason)))
                 }
             }
